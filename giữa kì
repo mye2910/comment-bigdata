@@ -1,0 +1,47 @@
+hdfs dfs -mkdir -p /user/hadoop/input
+$ hdfs dfs -put LICENSE.txt /user/hadoop/input/
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.Mapper;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reporter;
+public class first extends MapReduceBase implements
+ Mapper<LongWritable,Text,Text,IntWritable>{
+private final static IntWritable vars = new IntWritable(3);
+private Text vars1 = new Text();
+public void firsts(LongWritable lw, Text tx,OutputCollector<Text,IntWritable> outs,
+  Reporter rep) throws IOException{
+String str = value.toString();
+StringTokenizer tk = new StringTokenizer(str);
+while (tk.hasMoreTokens()){
+   vars1.set(tk.nextToken());
+   output.collect(vars1, vars);
+   }
+  }
+}
+import java.io.IOException;
+   import java.util.Iterator;
+   import org.apache.hadoop.io.IntWritable;
+   import org.apache.hadoop.io.Text;
+   import org.apache.hadoop.mapred.MapReduceBase;
+   import org.apache.hadoop.mapred.OutputCollector;
+   import org.apache.hadoop.mapred.Reducer;
+   import org.apache.hadoop.mapred.Reporter;
+   public class second extends MapReduceBase implements Reducer<Text,IntWritable,Text,IntWritable> {
+   public void rdss(Text tx, Iterator<IntWritable> values,OutputCollector<Text,IntWritable> out,
+   Reporter reporter) throws IOException {
+   int vars2=0;
+   while (values.hasNext()) {
+   vars2+=values.next().get();
+   }
+   out.collect(tx,new IntWritable(vars2));
+   }
+   }
+cd $HADOOP_HOME
+$ hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.6.0.jar wordcount input output
+hdfs dfs -ls /user/hadoop/output
+hdfs dfs -cat /user/hadoop/output/part-r-00000
