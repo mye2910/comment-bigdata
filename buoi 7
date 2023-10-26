@@ -1,0 +1,54 @@
+from pyspark.sql import SparkSession
+# Nhập thư viện Pipeline từ pyspark.ml để sử dụng trong quy trình máy học
+from pyspark.ml import Pipeline
+
+# Nhập thư viện VectorAssembler để tạo cột đặc trưng từ các cột đầu vào
+from pyspark.ml.feature import VectorAssembler
+
+# Nhập thư viện LinearRegression để tạo mô hình hồi quy tuyến tính
+from pyspark.ml.regression import LinearRegression
+
+# Khởi tạo một phiên làm việc Spark với tên ứng dụng "example"
+spark = SparkSession.builder.appName("example").getOrCreate()
+
+# Tạo một tập dữ liệu (DataFrame) chứa thông tin về khách sạn
+data = [(100, 4, 2, 500), (150, 5, 3, 600), (120, 4, 2, 550), (200, 5, 4, 700), (90, 3, 2, 450)]
+columns = ["price", "rating", "rooms", "location"]
+df = spark.createDataFrame(data, columns)
+
+# Xác định cột đặc trưng (feature_cols) - trong trường hợp này, là "rating", "rooms", và "location"
+
+feature_cols = ["rating", "rooms", "location"]
+
+# Thêm cột nhãn ("label") - chuyển đổi cột "price" thành "label" để làm cột nhãn
+df = df.withColumnRenamed("price", "label")
+
+# Tạo một VectorAssembler để biến đổi các cột đặc trưng thành một cột đặc trưng vector
+assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
+
+# Tạo mô hình hồi quy tuyến tính
+lr = LinearRegression(featuresCol="features", labelCol="label")
+
+# Tạo một Pipeline - sắp xếp các bước tiền xử lý và huấn luyện mô hình
+pipeline = Pipeline(stages=[assembler, lr])
+
+# Đào tạo mô hình trên tập dữ liệu
+model = pipeline.fit(df)
+
+# Tạo dự đoán sử dụng mô hình đã đào tạo
+predictions = model.transform(df)
+
+# Chọn các cột "features", "label", và "prediction" từ kết quả dự đoán và hiển thị chúng
+predictions.select("features", "label", "prediction").show()
+
+# Tạo DataFrame kết quả
+result_df = predictions.select("features", "label", "prediction")
+
+# Chuyển đổi kết quả thành danh sách chuỗi
+result_list = [str(row) for row in result_df.collect()]
+
+# Ghép các chuỗi trong danh sách thành một chuỗi duy nhất, sử dụng "\n" để ngăn cách giữa các dòng
+result_string = "\n".join(result_list)
+
+# In kết quả
+print(result_string)
