@@ -1,0 +1,132 @@
+1 số lệnh trên ravendb
+public class RavenController : Controller
+{
+public new IDocumentSession Session { get; set; }
+
+protected IDocumentStore _documentStore;
+
+public RavenController(IDocumentStore documentStore)
+{
+_documentStore = documentStore;
+}
+
+protected override void OnActionExecuting(ActionExecutingContext filterContext)
+{
+Session = _documentStore.OpenSession();
+base.OnActionExecuting(filterContext);
+}
+
+protected override void OnActionExecuted(ActionExecutedContext filterContext)
+{
+using (Session)
+{
+if(Session!=null && filterContext.Exception == null)
+{
+Session.SaveChanges();
+}
+}
+base.OnActionExecuted(filterContext);
+}
+}
+public class HomeController : RavenController
+{
+public HomeController(IDocumentStore store)
+: base(store)
+{
+
+}
+public ViewResult Details(int id)
+{
+Blog blog = Session.Load<Blog>(id);
+return View(blog);
+}
+
+- Danh sách các Blog được load như sau:
+
+public ActionResult Index()
+{
+return View(Session.Query<Blog>().ToList());
+}
+[HttpPost]
+public ActionResult Edit(Blog blog)
+{
+if (ModelState.IsValid)
+{
+Blog currentBlog = Session.Load<Blog>(blog.Id);
+currentBlog.Title = blog.Title;
+currentBlog.Content = blog.Content;
+Session.Store(currentBlog);
+return RedirectToAction(“Index”);
+}
+return View(blog);
+}
+</div>
+<div class=”blog-item-footer”>
+@Html.ActionLink(“Edit”, “Edit”, new { id = Model.Id }) |
+@Html.ActionLink(“Back to List”, “Index”)
+</div>
+<div class=”blog-item-content”>
+@Html.DisplayFor(model => model.Content)
+</div>
+<div>
+@if (Model.Comments != null)
+{
+<div>
+<h3>User Feedback</h3>
+</div>
+foreach (var item in Model.Comments)
+{
+<div style=”border: solid 1px #F0F0F0; margin: 2px”>
+<div class=”comment-author”>
+Comments by – @item.Author
+</div>
+<div class=”comment-message”>
+@item.Message
+</div>
+</div>
+}
+}
+</div>
+<div id=”addComments” style=”display: inline;”>
+<div>
+@Html.Partial(“CreateComments”, new RaBlog.Domain.Model.Comment { BlogId = Model.Id })
+</div>
+</div>
+@model RaBlog.Domain.Model.Comment
+@using (Html.BeginForm())
+{
+@Html.ValidationSummary(true)
+<fieldset>
+<legend>Post Comment</legend>
+@Html.HiddenFor(model => model.BlogId)
+<div style=”height:35px;”>
+<div class=”editor-label” style=”float:left; width:125px”>
+@Html.LabelFor(model => model.Author)
+</div>
+<div class=”editor-field” style=”float:left;”>
+@Html.EditorFor(model => model.Author)
+@Html.ValidationMessageFor(model => model.Author)
+</div>
+</div>
+<div style=”height:35px;”>
+<div class=”editor-label” style=”float:left; width:125px”>
+@Html.LabelFor(model => model.Email)
+</div>
+<div class=”editor-field” style=”float:left”>
+@Html.EditorFor(model => model.Email)
+@Html.ValidationMessageFor(model => model.Email)
+</div>
+</div>
+<div style=”height:35px;”>
+<div class=”editor-label” style=”float:left; width:125px”>
+@Html.LabelFor(model => model.Message)
+</div>
+<div class=”editor-field” style=”float:left;”>
+@Html.TextAreaFor(model => model.Message, new { rows = 5, cols = 100 })
+@Html.ValidationMessageFor(model => model.Message)
+</div>
+</div>
+<p>
+<input type=”submit” name=”CreateComment” value=”Post Comment” />
+</p>
+</fieldset>
